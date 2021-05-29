@@ -1,7 +1,3 @@
-body {
-    background-color: rgb(82, 86, 89);
-}
-
 canvas, .canvas-container {
     -webkit-box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.75);
     -moz-box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.75);
@@ -19,7 +15,6 @@ canvas, .canvas-container {
 }
 
 #pdf-container {
-    margin-top: 60px;
     padding-left: 10px;
     text-align: center;
 }
@@ -81,4 +76,17 @@ button:focus {
 .toolbar .tool .tool-button.active {
     background-color: rgb(82, 86, 89);
     border-color: rgb(82, 86, 89);
+}
+
+
+/* my own styles */
+#my-pdf-viewer{
+    background-color: rgb(82, 86, 89);
+    width: 50%;
+    height: 500px;
+    overflow: auto;
+}
+
+.toolbar{
+    position: sticky;
 }

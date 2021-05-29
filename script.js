@@ -1,12 +1,25 @@
-var pdf = new PDFAnnotate("pdf-container", "pdf.pdf", {
+var pdf = new PDFAnnotate("pdf.pdf", {
   onPageUpdated(page, oldData, newData) {
     console.log(page, oldData, newData);
   },
   ready() {
     console.log("Plugin initialized successfully");
   },
-  scale: 1.5,
+  scale: "fit",
   pageImageCompression: "MEDIUM", // FAST, MEDIUM, SLOW(Helps to control the new PDF file size)
+  container_id: "pdf-container",
+  component_id: "my-pdf-viewer",
+  toolbar_id: "toolbar",
+
+  onAnnotationCreate: function (){
+    console.log("create");
+  },
+  onAnnotationUpdate: function (){
+    console.log("udpate");
+  },
+  onAnnotationDelete: function (){
+    console.log("delete");
+  }
 });
 
 function changeActiveTool(event) {
@@ -93,3 +106,25 @@ $(function () {
         pdf.setFontSize(font_size);
     });
 });
+
+// ** my own script
+
+function zoomIn(event){
+    pdf.zoomIn();
+}
+
+function zoomOut(event){
+    pdf.zoomOut();
+}
+
+function fitPage(event){
+    pdf.fit();
+}
+
+function nextPage(event){
+    pdf.nextPage();
+}
+
+function previousPage(event){
+    pdf.previousPage();
+}

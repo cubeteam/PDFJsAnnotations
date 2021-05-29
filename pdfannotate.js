@@ -3,7 +3,7 @@
  * Author: Ravisha Heshan
  */
 
-var PDFAnnotate = function(container_id, url, options = {}) {
+var PDFAnnotate = function(url, options = {}) {
 	this.number_of_pages = 0;
 	this.pages_rendered = 0;
 	this.active_tool = 1; // 1 - Free hand, 2 - Text, 3 - Arrow, 4 - Rectangle
@@ -14,23 +14,131 @@ var PDFAnnotate = function(container_id, url, options = {}) {
 	this.borderSize = 1;
 	this.font_size = 16;
 	this.active_canvas = 0;
-	this.container_id = container_id;
 	this.url = url;
-	this.pageImageCompression = options.pageImageCompression
-    ? options.pageImageCompression.toUpperCase()
-    : "NONE";
+	this.pageImageCompression = options.pageImageCompression;
 	var inst = this;
+
+	//dom id
+	this.container_id = "";
+	this.component_id = "";
+	this.toolbar_id = "";
+
+	//scale; <int || fit>
+	this.scale = 1;
+	this.scaleMIN = 0.1;
+	this.scaleMAX = 1.3;
+
+	//step
+	this.step = 0.05;
+
+	//calback functions
+	this.onAnnotationCreate = function() {};
+	this.onAnnotationUpdate = function() {};
+	this.onAnnotationDelete = function() {};
 
 	var loadingTask = pdfjsLib.getDocument(this.url);
 	loadingTask.promise.then(function (pdf) {
-		var scale = options.scale ? options.scale : 1.3;
+		inst.pdf = pdf;
+		inst.render(options);
+	}, function (reason) {
+	    console.error(reason);
+	});
+
+	this.setOptions = function(options){
+		Object.assign(this, options);
+	}
+
+	this.getFirstPage = function(){
+		return new Promise( function (resolve){
+			inst.pdf.getPage(1).then(resolve);
+		});
+	}
+
+	this.zoomIn = function(){
+		this.render({
+			scale: this.scale + this.step
+		});
+	}
+
+	this.zoomOut = function(){
+		this.render({
+			scale: this.scale - this.step
+		});
+	}
+
+	this.fit = function(){
+		this.render({
+			scale: "fit"
+		});
+	}
+
+	this.getCurrentPage = function(){
+		const component = document.getElementById(this.component_id);	
+		const toolbar = document.getElementById(this.toolbar_id);
+		const scrollTop = component.scrollTop + toolbar.offsetHeight;
+
+		const page = document.getElementsByClassName("canvas-container")[0];
+		const pageContainerMargin = 25;
+		const pageHeight = page.offsetHeight + pageContainerMargin;
+
+		return Math.floor(scrollTop / pageHeight);
+	}
+
+	this.nextPage = function(){
+		const currentPage = this.getCurrentPage();
+		if(currentPage + 1 < this.number_of_pages){
+			const component = document.getElementById(this.component_id);	
+			const toolbar = document.getElementById(this.toolbar_id);
+			const page = document.getElementsByClassName("canvas-container")[0];
+			const pageContainerMargin = 25;
+			const pageHeight = page.offsetHeight + pageContainerMargin;
+			component.scrollTop = (currentPage + 1) * pageHeight + toolbar.offsetHeight;
+		}
+	}
+
+	this.previousPage = function(){
+		const currentPage = this.getCurrentPage();
+		if(currentPage - 1 >= 0){
+			const component = document.getElementById(this.component_id);	
+			const toolbar = document.getElementById(this.toolbar_id);
+			const page = document.getElementsByClassName("canvas-container")[0];
+			const pageContainerMargin = 25;
+			const pageHeight = page.offsetHeight + pageContainerMargin;
+			component.scrollTop = (currentPage - 1) * pageHeight + toolbar.offsetHeight;
+		}
+	}
+
+	this.render = async function (options){
+		let scalePrev = this.scale;
+		this.setOptions(options);
+		let pdf = this.pdf;
+		this.pages_rendered = 0;
+		
+		let container = document.getElementById(inst.container_id);
+		let component = document.getElementById(inst.component_id);
+		let toolbar = document.getElementById(this.toolbar_id);
+		container.innerHTML = "";
+		let componentHeight = component.clientHeight - toolbar.offsetHeight;
+
+		if(this.scale == "fit"){
+			let page = await this.getFirstPage();
+			this.scale = (componentHeight / page._pageInfo.view[3]) * scalePrev;
+		}
+		else if(this.scale > this.scaleMAX)
+			this.scale = this.scaleMAX
+		else if(this.scale < this.scaleMIN)
+			this.scale = this.scaleMIN
+		
+
+		console.log(this.scale);
 	    inst.number_of_pages = pdf.numPages;
 
 	    for (var i = 1; i <= pdf.numPages; i++) {
-	        pdf.getPage(i).then(function (page) {
-	            var viewport = page.getViewport({scale: scale});
+	        pdf.getPage(i).then(function (page) {	
+				
+	            var viewport = page.getViewport({scale: inst.scale});
 	            var canvas = document.createElement('canvas');
-	            document.getElementById(inst.container_id).appendChild(canvas);
+	            container.appendChild(canvas);
 	            canvas.className = 'pdf-canvas';
 	            canvas.height = viewport.height;
 	            canvas.width = viewport.width;
@@ -50,9 +158,7 @@ var PDFAnnotate = function(container_id, url, options = {}) {
 	            });
 	        });
 	    }
-	}, function (reason) {
-	    console.error(reason);
-	});
+	}
 
 	this.initFabric = function () {
 		var inst = this;
