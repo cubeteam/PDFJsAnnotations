@@ -198,13 +198,38 @@ var PDFAnnotate = function(url, options = {}) {
 	this.fabricClickHandler = function(event, fabricObj) {
 		var inst = this;
 	    if (inst.active_tool == 2) {
-	        var text = new fabric.IText('Sample text', {
-	            left: event.clientX - fabricObj.upperCanvasEl.getBoundingClientRect().left,
+			const myIText = fabric.util.createClass(fabric.IText, {
+				render: function(ctx) {
+					this.clearContextTop();
+					this.callSuper('render', ctx);
+					this.cursorOffsetCache = { };
+					this.renderCursorOrSelection();
+					ctx.strokeStyle = this.borderFill; 
+					ctx.lineWidth = this.borderSize; 
+					let coords = this.calcCoords();
+					ctx.beginPath();
+					ctx.moveTo(coords.tl.x, coords.tl.y);
+					ctx.lineTo(coords.tr.x, coords.tr.y);
+					ctx.lineTo(coords.br.x, coords.br.y);
+					ctx.lineTo(coords.bl.x, coords.bl.y);
+					ctx.closePath();
+					ctx.stroke();
+				},
+				_render: function(ctx) {
+				  this.callSuper('_render', ctx);
+				}
+			});
+
+			const text = new myIText('Sample text', {
+				left: event.clientX - fabricObj.upperCanvasEl.getBoundingClientRect().left,
 	            top: event.clientY - fabricObj.upperCanvasEl.getBoundingClientRect().top,
-	            fill: inst.color,
+				fill: inst.color,
+				borderFill: 'red',
+				borderSize: 3,
 	            fontSize: inst.font_size,
-	            selectable: true
-	        });
+				bgColor: 'transparent',
+				selectable: true
+			});
 	        fabricObj.add(text);
 	        inst.active_tool = 0;
 	    }
