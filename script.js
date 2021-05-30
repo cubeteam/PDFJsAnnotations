@@ -5,7 +5,8 @@ var pdf = new PDFAnnotate("pdf.pdf", {
   ready() {
     console.log("Plugin initialized successfully");
   },
-  scale: "fit",
+  //scale: "fit",
+  scale: 0.7,
   pageImageCompression: "MEDIUM", // FAST, MEDIUM, SLOW(Helps to control the new PDF file size)
   container_id: "pdf-container",
   component_id: "my-pdf-viewer",
@@ -48,32 +49,12 @@ function enableAddText(event) {
     pdf.enableAddText();
 }
 
-function enableAddArrow(event) {
-    event.preventDefault();
-    changeActiveTool(event);
-    pdf.enableAddArrow();
-}
-
-function addImage(event) {
-    event.preventDefault();
-    pdf.addImageToCanvas()
-}
-
-function enableRectangle(event) {
-    event.preventDefault();
-    changeActiveTool(event);
-    pdf.setColor('rgba(255, 0, 0, 0.3)');
-    pdf.setBorderColor('blue');
-    pdf.enableRectangle();
-}
-
 function deleteSelectedObject(event) {
   event.preventDefault();
   pdf.deleteSelectedObject();
 }
 
 function savePDF() {
-    // pdf.savePdf();
     pdf.savePdf('sample.pdf'); // save with given file name
 }
 

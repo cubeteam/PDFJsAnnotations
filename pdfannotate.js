@@ -2,6 +2,24 @@
  * PDFAnnotate v1.0.1
  * Author: Ravisha Heshan
  */
+fabric.IText.prototype.defRender = fabric.IText.prototype.render;
+fabric.IText.prototype.render = function(ctx) {
+	this.clearContextTop();
+	this.defRender(ctx);
+	this.cursorOffsetCache = { };
+	this.renderCursorOrSelection();
+	ctx.strokeStyle = "red"; 
+	ctx.lineWidth = 3; 
+	let coords = this.calcCoords();
+	ctx.beginPath();
+	ctx.moveTo(coords.tl.x, coords.tl.y);
+	ctx.lineTo(coords.tr.x, coords.tr.y);
+	ctx.lineTo(coords.br.x, coords.br.y);
+	ctx.lineTo(coords.bl.x, coords.bl.y);
+	ctx.closePath();
+	ctx.stroke();
+}
+
 
 var PDFAnnotate = function(url, options = {}) {
 	this.number_of_pages = 0;
@@ -29,19 +47,20 @@ var PDFAnnotate = function(url, options = {}) {
 	this.scaleMAX = 1.3;
 
 	//step
-	this.step = 0.05;
+	this.step = 0.1;
 
 	//calback functions
 	this.onAnnotationCreate = function() {};
 	this.onAnnotationUpdate = function() {};
 	this.onAnnotationDelete = function() {};
 
-	var loadingTask = pdfjsLib.getDocument(this.url);
+	//loadPDF on startup
+	var loadingTask = pdfjsLib.getDocument(url);
 	loadingTask.promise.then(function (pdf) {
 		inst.pdf = pdf;
 		inst.render(options);
 	}, function (reason) {
-	    console.error(reason);
+		console.error(reason);
 	});
 
 	this.setOptions = function(options){
@@ -109,19 +128,24 @@ var PDFAnnotate = function(url, options = {}) {
 	}
 
 	this.render = async function (options){
-		let scalePrev = this.scale;
+		const scalePrev = this.scale;
 		this.setOptions(options);
-		let pdf = this.pdf;
-		this.pages_rendered = 0;
+		//const pdf = Object.assign(Object.create(Object.getPrototypeOf(this.pdf)), this.pdf);
+		console.log(this.pdf);
+		const pdf = this.pdf;
 		
-		let container = document.getElementById(inst.container_id);
-		let component = document.getElementById(inst.component_id);
-		let toolbar = document.getElementById(this.toolbar_id);
+		const json = this.serializePdf();
+		this.pages_rendered = 0;
+		this.fabricObjects = [];
+		
+		const container = document.getElementById(inst.container_id);
+		const component = document.getElementById(inst.component_id);
+		const toolbar = document.getElementById(this.toolbar_id);
 		container.innerHTML = "";
-		let componentHeight = component.clientHeight - toolbar.offsetHeight;
+		const componentHeight = component.clientHeight - toolbar.offsetHeight;
 
 		if(this.scale == "fit"){
-			let page = await this.getFirstPage();
+			const page = await this.getFirstPage();
 			this.scale = (componentHeight / page._pageInfo.view[3]) * scalePrev;
 		}
 		else if(this.scale > this.scaleMAX)
@@ -134,8 +158,7 @@ var PDFAnnotate = function(url, options = {}) {
 	    inst.number_of_pages = pdf.numPages;
 
 	    for (var i = 1; i <= pdf.numPages; i++) {
-	        pdf.getPage(i).then(function (page) {	
-				
+	        pdf.getPage(i).then(function (page) {
 	            var viewport = page.getViewport({scale: inst.scale});
 	            var canvas = document.createElement('canvas');
 	            container.appendChild(canvas);
@@ -154,7 +177,11 @@ var PDFAnnotate = function(url, options = {}) {
 	                    $(el).attr('id', 'page-' + (index + 1) + '-canvas');
 	                });
 	                inst.pages_rendered++;
-	                if (inst.pages_rendered == inst.number_of_pages) inst.initFabric();
+	                if (inst.pages_rendered == inst.number_of_pages){
+						inst.initFabric();
+						if(json) 
+							inst.loadFromJSON(JSON.parse(json));
+					} 
 	            });
 	        });
 	    }
@@ -176,6 +203,7 @@ var PDFAnnotate = function(url, options = {}) {
 				fabricObj.on('object:added', function() {
 					var oldValue = Object.assign({}, inst.fabricObjectsData[index]);
 					inst.fabricObjectsData[index] = fabricObj.toJSON()
+					console.log("update");
 					options.onPageUpdated(index + 1, oldValue, inst.fabricObjectsData[index]) 
 				})
 			}
@@ -197,42 +225,20 @@ var PDFAnnotate = function(url, options = {}) {
 
 	this.fabricClickHandler = function(event, fabricObj) {
 		var inst = this;
-	    if (inst.active_tool == 2) {
-			const myIText = fabric.util.createClass(fabric.IText, {
-				render: function(ctx) {
-					this.clearContextTop();
-					this.callSuper('render', ctx);
-					this.cursorOffsetCache = { };
-					this.renderCursorOrSelection();
-					ctx.strokeStyle = this.borderFill; 
-					ctx.lineWidth = this.borderSize; 
-					let coords = this.calcCoords();
-					ctx.beginPath();
-					ctx.moveTo(coords.tl.x, coords.tl.y);
-					ctx.lineTo(coords.tr.x, coords.tr.y);
-					ctx.lineTo(coords.br.x, coords.br.y);
-					ctx.lineTo(coords.bl.x, coords.bl.y);
-					ctx.closePath();
-					ctx.stroke();
-				},
-				_render: function(ctx) {
-				  this.callSuper('_render', ctx);
-				}
-			});
-
-			const text = new myIText('Sample text', {
-				left: event.clientX - fabricObj.upperCanvasEl.getBoundingClientRect().left,
-	            top: event.clientY - fabricObj.upperCanvasEl.getBoundingClientRect().top,
-				fill: inst.color,
-				borderFill: 'red',
-				borderSize: 3,
-	            fontSize: inst.font_size,
-				bgColor: 'transparent',
-				selectable: true
-			});
-	        fabricObj.add(text);
-	        inst.active_tool = 0;
-	    }
+		if (inst.active_tool != 0) {
+			if (inst.active_tool == 2) {	
+				const text = new fabric.IText('Sample text', {
+					left: event.clientX - fabricObj.upperCanvasEl.getBoundingClientRect().left,
+					top: event.clientY - fabricObj.upperCanvasEl.getBoundingClientRect().top,
+					fill: inst.color,
+					fontSize: inst.font_size,
+					selectable: true
+				});
+				fabricObj.add(text);
+				inst.active_tool = 0;
+			}
+			this.onAnnotationCreate();
+		}
 	}
 }
 
@@ -266,70 +272,15 @@ PDFAnnotate.prototype.enableAddText = function () {
 	}
 }
 
-PDFAnnotate.prototype.enableRectangle = function () {
-	var inst = this;
-	var fabricObj = inst.fabricObjects[inst.active_canvas];
-	inst.active_tool = 4;
-	if (inst.fabricObjects.length > 0) {
-		$.each(inst.fabricObjects, function (index, fabricObj) {
-			fabricObj.isDrawingMode = false;
-		});
-	}
-
-	var rect = new fabric.Rect({
-		width: 100,
-		height: 100,
-		fill: inst.color,
-		stroke: inst.borderColor,
-		strokeSize: inst.borderSize
-	});
-	fabricObj.add(rect);
-}
-
-PDFAnnotate.prototype.enableAddArrow = function () {
-	var inst = this;
-	inst.active_tool = 3;
-	if (inst.fabricObjects.length > 0) {
-	    $.each(inst.fabricObjects, function (index, fabricObj) {
-	        fabricObj.isDrawingMode = false;
-	        new Arrow(fabricObj, inst.color, function () {
-	            inst.active_tool = 0;
-	        });
-	    });
-	}
-}
-
-PDFAnnotate.prototype.addImageToCanvas = function () {
-	var inst = this;
-	var fabricObj = inst.fabricObjects[inst.active_canvas];
-
-	if (fabricObj) {
-		var inputElement = document.createElement("input");
-		inputElement.type = 'file'
-		inputElement.accept = ".jpg,.jpeg,.png,.PNG,.JPG,.JPEG";
-		inputElement.onchange = function() {
-			var reader = new FileReader();
-			reader.addEventListener("load", function () {
-				inputElement.remove()
-				var image = new Image();
-				image.onload = function () {
-					fabricObj.add(new fabric.Image(image))
-				}
-				image.src = this.result;
-			}, false);
-			reader.readAsDataURL(inputElement.files[0]);
-		}
-		document.getElementsByTagName('body')[0].appendChild(inputElement)
-		inputElement.click()
-	} 
-}
-
 PDFAnnotate.prototype.deleteSelectedObject = function () {
 	var inst = this;
 	var activeObject = inst.fabricObjects[inst.active_canvas].getActiveObject();
 	if (activeObject)
 	{
-	    if (confirm('Are you sure ?')) inst.fabricObjects[inst.active_canvas].remove(activeObject);
+	    if (confirm('Are you sure ?')) {
+			inst.fabricObjects[inst.active_canvas].remove(activeObject);
+			this.onAnnotationDelete();
+		}
 	}
 }
 
@@ -400,6 +351,7 @@ PDFAnnotate.prototype.clearActivePage = function () {
 	if (confirm('Are you sure?')) {
 	    fabricObj.clear();
 	    fabricObj.setBackgroundImage(bg, fabricObj.renderAll.bind(fabricObj));
+		this.onAnnotationDelete();
 	}
 }
 
@@ -407,8 +359,6 @@ PDFAnnotate.prototype.serializePdf = function() {
 	var inst = this;
 	return JSON.stringify(inst.fabricObjects, null, 4);
 }
-
-
 
 PDFAnnotate.prototype.loadFromJSON = function(jsonData) {
 	var inst = this;
