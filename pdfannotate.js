@@ -2,6 +2,11 @@
  * PDFAnnotate v1.0.1
  * Author: Ravisha Heshan
  */
+fabric.Object.prototype.set({
+    myleft: 0,
+    mytop: 0
+});
+
 fabric.IText.prototype.defRender = fabric.IText.prototype.render;
 fabric.IText.prototype.render = function(ctx) {
 	this.clearContextTop();
@@ -19,7 +24,6 @@ fabric.IText.prototype.render = function(ctx) {
 	ctx.closePath();
 	ctx.stroke();
 }
-
 
 var PDFAnnotate = function(url, options = {}) {
 	this.number_of_pages = 0;
@@ -43,6 +47,7 @@ var PDFAnnotate = function(url, options = {}) {
 
 	//scale; <int || fit>
 	this.scale = 1;
+	this.scalePrev = this.scale;
 	this.scaleMIN = 0.1;
 	this.scaleMAX = 1.3;
 
@@ -116,6 +121,8 @@ var PDFAnnotate = function(url, options = {}) {
 	}
 
 	this.previousPage = function(){
+		
+		console.log(inst.fabricObjectsData);
 		const currentPage = this.getCurrentPage();
 		if(currentPage - 1 >= 0){
 			const component = document.getElementById(this.component_id);	
@@ -128,13 +135,11 @@ var PDFAnnotate = function(url, options = {}) {
 	}
 
 	this.render = async function (options){
-		const scalePrev = this.scale;
+		this.scalePrev = this.scale;
 		this.setOptions(options);
-		//const pdf = Object.assign(Object.create(Object.getPrototypeOf(this.pdf)), this.pdf);
-		console.log(this.pdf);
 		const pdf = this.pdf;
 		
-		const json = this.serializePdf();
+		const json = this.saveToFullJSON();
 		this.pages_rendered = 0;
 		this.fabricObjects = [];
 		
@@ -154,7 +159,6 @@ var PDFAnnotate = function(url, options = {}) {
 			this.scale = this.scaleMIN
 		
 
-		console.log(this.scale);
 	    inst.number_of_pages = pdf.numPages;
 
 	    for (var i = 1; i <= pdf.numPages; i++) {
@@ -179,8 +183,7 @@ var PDFAnnotate = function(url, options = {}) {
 	                inst.pages_rendered++;
 	                if (inst.pages_rendered == inst.number_of_pages){
 						inst.initFabric();
-						if(json) 
-							inst.loadFromJSON(JSON.parse(json));
+						if(json) inst.loadFromFullJSON(JSON.parse(json));
 					} 
 	            });
 	        });
@@ -217,6 +220,15 @@ var PDFAnnotate = function(url, options = {}) {
 				fabricObj.off('after:render')
 			})
 
+			fabricObj.on('object:modified', function (event) {
+				const annotation = event.target;
+				annotation.normalLeft = annotation.left / inst.scale;
+				annotation.normalTop = annotation.top / inst.scale;
+				annotation.normalFontSize = annotation.fontSize / inst.scale; 
+
+				inst.onAnnotationUpdate();
+			});
+
 			if (index === canvases.length - 1 && typeof options.ready === 'function') {
 				options.ready()
 			}
@@ -232,10 +244,27 @@ var PDFAnnotate = function(url, options = {}) {
 					top: event.clientY - fabricObj.upperCanvasEl.getBoundingClientRect().top,
 					fill: inst.color,
 					fontSize: inst.font_size,
-					selectable: true
+					selectable: true,
+					hasRotatingPoint: false,
+					id: Date.now(),
+					normalTop: 0,
+					normalLeft: 0,
+					normalFontSize: 0,
 				});
+/*
+				text.controls = {
+					...fabric.Text.prototype.controls,
+					mtr: new fabric.Control({ visible: false })
+				}
+*/
+
+				text.normalLeft = text.left / inst.scale;
+				text.normalTop = text.top / inst.scale;
+				text.normalFontSize = text.fontSize / inst.scale; 
+
 				fabricObj.add(text);
 				inst.active_tool = 0;
+				console.log(fabricObj, text);
 			}
 			this.onAnnotationCreate();
 		}
@@ -355,15 +384,100 @@ PDFAnnotate.prototype.clearActivePage = function () {
 	}
 }
 
-PDFAnnotate.prototype.serializePdf = function() {
+PDFAnnotate.prototype.saveToFullJSON = function() {
 	var inst = this;
-	return JSON.stringify(inst.fabricObjects, null, 4);
+	const array = inst.fabricObjects.map(fabricObject => {
+		return fabricObject.toJSON(["id", "normalLeft", "normalTop", "normalFontSize"]);
+	})
+	return JSON.stringify(array);
+}
+
+PDFAnnotate.prototype.saveToJSON = function() {
+	var inst = this;
+	const array = inst.fabricObjects.map(function(fabricObject) {
+		return fabricObject.toJSON(["id", "normalLeft", "normalTop", "normalFontSize"]);
+	})
+
+	console.log(array);
+	const annotations = [];
+	array.forEach(function(page, index) {
+		page.objects.forEach(function(object){
+			annotations.push({
+				id: object.id,
+				type: object.type,
+				page: index,
+				x: object.normalLeft,
+				y: object.normalTop,
+				color: object.fill,
+				content: object.text,
+				fontSize: object.normalFontSize
+			  });
+		});
+	});
+
+	console.log(annotations);
+	return JSON.stringify(annotations);
 }
 
 PDFAnnotate.prototype.loadFromJSON = function(jsonData) {
 	var inst = this;
+	//remove all annotations
+	$.each(inst.fabricObjects, function (index, fabricObj) {
+		fabricObj.remove(...fabricObj.getObjects());
+	})
+
+	const annotations = jsonData.map(function(object){
+		return {
+			id: object.id,
+			type: object.type,
+			page: object.page,
+			normalLeft: object.x,
+			normalTop: object.y,
+			fill: object.color,
+			text: object.content,
+			normalFontSize: object.fontSize,
+			left: object.x * inst.scale,
+			top: object.y * inst.scale,
+			fontSize: object.fontSize * inst.scale,
+		  }
+	});
+
+	annotations.forEach(function(annotation){
+		let pageIndex = annotation.page;
+		inst.fabricObjects[pageIndex].add(new fabric.IText('', annotation));
+ 	});
+
+
+}
+
+PDFAnnotate.prototype.saveToFullJSON = function() {
+	var inst = this;
+	const array = inst.fabricObjects.map(fabricObject => {
+		return fabricObject.toJSON(["id", "normalLeft", "normalTop", "normalFontSize"]);
+	})
+	return JSON.stringify(array);
+}
+
+PDFAnnotate.prototype.loadFromFullJSON = function(jsonData) {
+	var inst = this;
+
+	//remove all annotations
+	$.each(inst.fabricObjects, function (index, fabricObj) {
+		fabricObj.remove(...fabricObj.getObjects());
+	})
+	
 	$.each(inst.fabricObjects, function (index, fabricObj) {
 		if (jsonData.length > index) {
+			//remove backgroundImage
+			jsonData[index].backgroundImage = null;
+
+			//set scale to objects
+			jsonData[index].objects.forEach(function(object){
+				object.left = object.normalLeft * inst.scale;
+				object.top = object.normalTop * inst.scale;
+				object.fontSize = object.normalFontSize * inst.scale;
+			});
+
 			fabricObj.loadFromJSON(jsonData[index], function () {
 				inst.fabricObjectsData[index] = fabricObj.toJSON()
 			})
