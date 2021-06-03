@@ -2,11 +2,6 @@
  * PDFAnnotate v1.0.1
  * Author: Ravisha Heshan
  */
-fabric.Object.prototype.set({
-    myleft: 0,
-    mytop: 0
-});
-
 fabric.IText.prototype.defRender = fabric.IText.prototype.render;
 fabric.IText.prototype.render = function(ctx) {
 	this.clearContextTop();
@@ -140,6 +135,7 @@ var PDFAnnotate = function(url, options = {}) {
 		const pdf = this.pdf;
 		
 		const json = this.saveToFullJSON();
+		console.log(JSON.parse(json));
 		this.pages_rendered = 0;
 		this.fabricObjects = [];
 		
@@ -151,7 +147,7 @@ var PDFAnnotate = function(url, options = {}) {
 
 		if(this.scale == "fit"){
 			const page = await this.getFirstPage();
-			this.scale = (componentHeight / page._pageInfo.view[3]) * scalePrev;
+			this.scale = (componentHeight / page._pageInfo.view[3]) * this.scalePrev;
 		}
 		else if(this.scale > this.scaleMAX)
 			this.scale = this.scaleMAX
@@ -250,13 +246,8 @@ var PDFAnnotate = function(url, options = {}) {
 					normalTop: 0,
 					normalLeft: 0,
 					normalFontSize: 0,
+					hasControls: false
 				});
-/*
-				text.controls = {
-					...fabric.Text.prototype.controls,
-					mtr: new fabric.Control({ visible: false })
-				}
-*/
 
 				text.normalLeft = text.left / inst.scale;
 				text.normalTop = text.top / inst.scale;
@@ -439,6 +430,7 @@ PDFAnnotate.prototype.loadFromJSON = function(jsonData) {
 			left: object.x * inst.scale,
 			top: object.y * inst.scale,
 			fontSize: object.fontSize * inst.scale,
+			hasControls: false
 		  }
 	});
 
@@ -453,7 +445,7 @@ PDFAnnotate.prototype.loadFromJSON = function(jsonData) {
 PDFAnnotate.prototype.saveToFullJSON = function() {
 	var inst = this;
 	const array = inst.fabricObjects.map(fabricObject => {
-		return fabricObject.toJSON(["id", "normalLeft", "normalTop", "normalFontSize"]);
+		return fabricObject.toJSON(["id", "normalLeft", "normalTop", "normalFontSize", "hasControls"]);
 	})
 	return JSON.stringify(array);
 }
