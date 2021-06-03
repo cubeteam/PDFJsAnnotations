@@ -8,8 +8,8 @@ fabric.IText.prototype.render = function (ctx) {
   this.defRender(ctx);
   this.cursorOffsetCache = {};
   this.renderCursorOrSelection();
-  ctx.strokeStyle = "red";
-  ctx.lineWidth = 3;
+  ctx.strokeStyle = "#528cbd";
+  ctx.lineWidth = 1;
   let coords = this.calcCoords();
   ctx.beginPath();
   ctx.moveTo(coords.tl.x, coords.tl.y);
@@ -26,8 +26,7 @@ var PDFAnnotate = function (url, options = {}) {
   this.active_tool = 1; // 1 - Free hand, 2 - Text, 3 - Arrow, 4 - Rectangle
   this.fabricObjects = [];
   this.fabricObjectsData = [];
-  this.color = "#212121";
-  this.borderColor = "#000000";
+  this.color = "#528cbd";
   this.borderSize = 1;
   this.font_size = 16;
   this.active_canvas = 0;
@@ -51,6 +50,9 @@ var PDFAnnotate = function (url, options = {}) {
 
   //mode
   this.readOnly = true;
+
+  //controls settings
+  this.controlColor = "#000000";
 
   //calback functions
   this.onAnnotationCreate = function () {};
@@ -123,7 +125,6 @@ var PDFAnnotate = function (url, options = {}) {
   };
 
   this.previousPage = function () {
-    console.log(inst.fabricObjectsData);
     const currentPage = this.getCurrentPage();
     if (currentPage - 1 >= 0) {
       const component = document.getElementById(this.component_id);
@@ -142,7 +143,6 @@ var PDFAnnotate = function (url, options = {}) {
     const pdf = this.pdf;
 
     const json = this.saveToFullJSON();
-    console.log(JSON.parse(json));
     this.pages_rendered = 0;
     this.fabricObjects = [];
 
@@ -206,7 +206,6 @@ var PDFAnnotate = function (url, options = {}) {
         fabricObj.on("object:added", function () {
           var oldValue = Object.assign({}, inst.fabricObjectsData[index]);
           inst.fabricObjectsData[index] = fabricObj.toJSON();
-          console.log("update");
           options.onPageUpdated(
             index + 1,
             oldValue,
@@ -265,6 +264,7 @@ var PDFAnnotate = function (url, options = {}) {
           normalFontSize: 0,
           hasControls: false,
           selectable: !inst.readOnly,
+          borderColor: inst.controlColor,
         });
 
         text.normalLeft = text.left / inst.scale;
@@ -273,7 +273,6 @@ var PDFAnnotate = function (url, options = {}) {
 
         fabricObj.add(text);
         inst.active_tool = 0;
-        console.log(fabricObj, text);
       }
       this.onAnnotationCreate();
     }
@@ -286,16 +285,6 @@ PDFAnnotate.prototype.enableSelector = function () {
   if (inst.fabricObjects.length > 0) {
     $.each(inst.fabricObjects, function (index, fabricObj) {
       fabricObj.isDrawingMode = false;
-    });
-  }
-};
-
-PDFAnnotate.prototype.enablePencil = function () {
-  var inst = this;
-  inst.active_tool = 1;
-  if (inst.fabricObjects.length > 0) {
-    $.each(inst.fabricObjects, function (index, fabricObj) {
-      fabricObj.isDrawingMode = true;
     });
   }
 };
@@ -368,11 +357,6 @@ PDFAnnotate.prototype.setColor = function (color) {
   });
 };
 
-PDFAnnotate.prototype.setBorderColor = function (color) {
-  var inst = this;
-  inst.borderColor = color;
-};
-
 PDFAnnotate.prototype.setFontSize = function (size) {
   this.font_size = size;
 };
@@ -416,7 +400,6 @@ PDFAnnotate.prototype.saveToJSON = function () {
     ]);
   });
 
-  console.log(array);
   const annotations = [];
   array.forEach(function (page, index) {
     page.objects.forEach(function (object) {
@@ -433,7 +416,6 @@ PDFAnnotate.prototype.saveToJSON = function () {
     });
   });
 
-  console.log(annotations);
   return JSON.stringify(annotations);
 };
 
@@ -459,6 +441,7 @@ PDFAnnotate.prototype.loadFromJSON = function (jsonData) {
       fontSize: object.fontSize * inst.scale,
       hasControls: false,
       selectable: !inst.readOnly,
+      borderColor: inst.controlColor,
     };
   });
 
@@ -476,7 +459,6 @@ PDFAnnotate.prototype.saveToFullJSON = function () {
       "normalLeft",
       "normalTop",
       "normalFontSize",
-      "hasControls",
     ]);
   });
   return JSON.stringify(array);
@@ -501,6 +483,8 @@ PDFAnnotate.prototype.loadFromFullJSON = function (jsonData) {
         object.top = object.normalTop * inst.scale;
         object.fontSize = object.normalFontSize * inst.scale;
         object.selectable = !inst.readOnly;
+        object.borderColor = inst.controlColor;
+        object.hasControls = false;
       });
 
       fabricObj.loadFromJSON(jsonData[index], function () {
