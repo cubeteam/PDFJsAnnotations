@@ -311,6 +311,15 @@ PDFAnnotate.prototype.deleteSelectedObject = function () {
   }
 };
 
+PDFAnnotate.prototype.deleteAllObjects = function () {
+  var inst = this;
+  if (confirm("Are you sure ?")) {
+    inst.fabricObjects.forEach(function (page) {
+      page.remove(...page.getObjects());
+    });
+  }
+};
+
 PDFAnnotate.prototype.setBrushSize = function (size) {
   var inst = this;
   $.each(inst.fabricObjects, function (index, fabricObj) {
