@@ -37,12 +37,6 @@ function enableSelector(event) {
   pdf.enableSelector();
 }
 
-function enablePencil(event) {
-  event.preventDefault();
-  changeActiveTool(event);
-  pdf.enablePencil();
-}
-
 function enableAddText(event) {
   event.preventDefault();
   changeActiveTool(event);
@@ -53,41 +47,6 @@ function deleteSelectedObject(event) {
   event.preventDefault();
   pdf.deleteSelectedObject();
 }
-
-function savePDF() {
-  let json = pdf.saveToJSON();
-  pdf.loadFromJSON(JSON.parse(json));
-}
-
-function clearPage() {
-  pdf.clearActivePage();
-}
-
-function showPdfData() {
-  var string = pdf.serializePdf();
-  $("#dataModal .modal-body pre").first().text(string);
-  PR.prettyPrint();
-  $("#dataModal").modal("show");
-}
-
-$(function () {
-  $(".color-tool").click(function () {
-    $(".color-tool.active").removeClass("active");
-    $(this).addClass("active");
-    color = $(this).get(0).style.backgroundColor;
-    pdf.setColor(color);
-  });
-
-  $("#brush-size").change(function () {
-    var width = $(this).val();
-    pdf.setBrushSize(width);
-  });
-
-  $("#font-size").change(function () {
-    var font_size = $(this).val();
-    pdf.setFontSize(font_size);
-  });
-});
 
 // ** my own script
 
