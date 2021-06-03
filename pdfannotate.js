@@ -199,6 +199,7 @@ var PDFAnnotate = function (url, options = {}) {
           width: 1,
           color: inst.color,
         },
+        selection: false,
       });
 
       inst.fabricObjects.push(fabricObj);
