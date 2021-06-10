@@ -271,7 +271,7 @@
               event.clientY -
               fabricObj.upperCanvasEl.getBoundingClientRect().top,
             fill: inst.color,
-            fontSize: inst.font_size,
+            fontSize: inst.font_size * inst.scale,
             selectable: true,
             hasRotatingPoint: false,
             id: Date.now(),
