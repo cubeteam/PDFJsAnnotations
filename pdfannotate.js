@@ -4,9 +4,12 @@
  */
 (function (root, factory) {
   if (typeof define === "function" && define.amd) {
-    define(["fabric", "pdfjsLib"], factory);
+    define(["fabric", "pdfjs-dist/build/pdf"], factory);
   } else if (typeof exports === "object") {
-    module.exports = factory(require("fabric"), require("pdfjsLib"));
+    module.exports = factory(
+      require("fabric"),
+      require("pdfjs-dist/build/pdf")
+    );
   } else {
     root.PDFAnnotate = factory(root.fabric, root.pdfjsLib);
   }
@@ -48,11 +51,9 @@
     //dom id
     this.container_id = "";
     this.component_id = "";
-    this.toolbar_id = "";
 
     //scale; <int || fit>
     this.scale = 1;
-    this.scalePrev = this.scale;
     this.scaleMIN = 0.1;
     this.scaleMAX = 1.3;
 
@@ -112,13 +113,14 @@
 
     this.getCurrentPage = function () {
       const component = document.getElementById(this.component_id);
-      const toolbar = document.getElementById(this.toolbar_id);
-      const scrollTop = component.scrollTop + toolbar.offsetHeight;
+      const scrollTop = component.scrollTop;
 
       const page = document.getElementsByClassName("canvas-container")[0];
-      const pageContainerMargin = 25;
-      const pageHeight = page.offsetHeight + pageContainerMargin;
-
+      const style = page.currentStyle || window.getComputedStyle(page);
+      const pageContainerMargin = parseInt(
+        style.marginBottom.replace("px", "")
+      );
+      const pageHeight = page.offsetHeight + pageContainerMargin - 1;
       return Math.floor(scrollTop / pageHeight);
     };
 
@@ -126,12 +128,13 @@
       const currentPage = this.getCurrentPage();
       if (currentPage + 1 < this.number_of_pages) {
         const component = document.getElementById(this.component_id);
-        const toolbar = document.getElementById(this.toolbar_id);
         const page = document.getElementsByClassName("canvas-container")[0];
-        const pageContainerMargin = 25;
-        const pageHeight = page.offsetHeight + pageContainerMargin;
-        component.scrollTop =
-          (currentPage + 1) * pageHeight + toolbar.offsetHeight;
+        const style = page.currentStyle || window.getComputedStyle(page);
+        const pageContainerMargin = parseInt(
+          style.marginBottom.replace("px", "")
+        );
+        const pageHeight = page.offsetHeight + pageContainerMargin - 1;
+        component.scrollTop = (currentPage + 1) * pageHeight;
       }
     };
 
@@ -139,17 +142,17 @@
       const currentPage = this.getCurrentPage();
       if (currentPage - 1 >= 0) {
         const component = document.getElementById(this.component_id);
-        const toolbar = document.getElementById(this.toolbar_id);
         const page = document.getElementsByClassName("canvas-container")[0];
-        const pageContainerMargin = 25;
-        const pageHeight = page.offsetHeight + pageContainerMargin;
-        component.scrollTop =
-          (currentPage - 1) * pageHeight + toolbar.offsetHeight;
+        const style = page.currentStyle || window.getComputedStyle(page);
+        const pageContainerMargin = parseInt(
+          style.marginBottom.replace("px", "")
+        );
+        const pageHeight = page.offsetHeight + pageContainerMargin - 1;
+        component.scrollTop = (currentPage - 1) * pageHeight;
       }
     };
 
     this.render = async function (options) {
-      this.scalePrev = this.scale;
       this.setOptions(options);
       const pdf = this.pdf;
 
@@ -159,14 +162,12 @@
 
       const container = document.getElementById(inst.container_id);
       const component = document.getElementById(inst.component_id);
-      const toolbar = document.getElementById(this.toolbar_id);
       container.innerHTML = "";
-      const componentHeight = component.clientHeight - toolbar.offsetHeight;
+      const componentHeight = component.clientHeight;
 
       if (this.scale == "fit") {
         const page = await this.getFirstPage();
-        this.scale =
-          (componentHeight / page._pageInfo.view[3]) * this.scalePrev;
+        this.scale = componentHeight / page._pageInfo.view[3];
       } else if (this.scale > this.scaleMAX) this.scale = this.scaleMAX;
       else if (this.scale < this.scaleMIN) this.scale = this.scaleMIN;
 

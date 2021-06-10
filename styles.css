@@ -77,11 +77,14 @@ button:focus {
 /* my own styles */
 #my-pdf-viewer {
   background-color: rgb(82, 86, 89);
-  width: 50%;
   height: 400px;
   overflow: auto;
 }
 
 .toolbar {
   position: sticky;
+}
+
+.wrapper {
+  width: 50%;
 }

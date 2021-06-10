@@ -9,7 +9,6 @@ var pdf = new PDFAnnotate("pdf.pdf", {
   pageImageCompression: "MEDIUM", // FAST, MEDIUM, SLOW(Helps to control the new PDF file size)
   container_id: "pdf-container",
   component_id: "my-pdf-viewer",
-  toolbar_id: "toolbar",
   readOnly: false,
 
   onAnnotationCreate: function () {
