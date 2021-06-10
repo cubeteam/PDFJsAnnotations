@@ -43,6 +43,7 @@
     this.color = "#528cbd";
     this.borderSize = 1;
     this.font_size = 16;
+    this.padding = 2;
     this.active_canvas = 0;
     this.url = url;
     this.pageImageCompression = options.pageImageCompression;
@@ -280,6 +281,7 @@
             hasControls: false,
             selectable: !inst.readOnly,
             borderColor: inst.controlColor,
+            padding: inst.padding,
           });
 
           text.normalLeft = text.left / inst.scale;
@@ -378,6 +380,7 @@
         "normalLeft",
         "normalTop",
         "normalFontSize",
+        "padding",
       ]);
     });
 
@@ -393,6 +396,7 @@
           color: object.fill,
           content: object.text,
           fontSize: object.normalFontSize,
+          padding: object.padding,
         });
       });
     });
@@ -423,6 +427,7 @@
         hasControls: false,
         selectable: !inst.readOnly,
         borderColor: inst.controlColor,
+        padding: object.padding,
       };
     });
 
@@ -440,6 +445,7 @@
         "normalLeft",
         "normalTop",
         "normalFontSize",
+        "padding",
       ]);
     });
     return JSON.stringify(array);
