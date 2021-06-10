@@ -113,14 +113,14 @@
 
     this.getCurrentPage = function () {
       const component = document.getElementById(this.component_id);
-      const scrollTop = component.scrollTop;
+      const scrollTop = component.scrollTop + 10;
 
       const page = document.getElementsByClassName("canvas-container")[0];
       const style = page.currentStyle || window.getComputedStyle(page);
       const pageContainerMargin = parseInt(
         style.marginBottom.replace("px", "")
       );
-      const pageHeight = page.offsetHeight + pageContainerMargin - 1;
+      const pageHeight = page.offsetHeight + pageContainerMargin;
       return Math.floor(scrollTop / pageHeight);
     };
 
@@ -133,8 +133,8 @@
         const pageContainerMargin = parseInt(
           style.marginBottom.replace("px", "")
         );
-        const pageHeight = page.offsetHeight + pageContainerMargin - 1;
-        component.scrollTop = (currentPage + 1) * pageHeight;
+        const pageHeight = page.offsetHeight + pageContainerMargin;
+        component.scrollTop = (currentPage + 1) * pageHeight + 10;
       }
     };
 
@@ -147,8 +147,8 @@
         const pageContainerMargin = parseInt(
           style.marginBottom.replace("px", "")
         );
-        const pageHeight = page.offsetHeight + pageContainerMargin - 1;
-        component.scrollTop = (currentPage - 1) * pageHeight;
+        const pageHeight = page.offsetHeight + pageContainerMargin;
+        component.scrollTop = (currentPage - 1) * pageHeight + 10;
       }
     };
 
