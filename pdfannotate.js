@@ -247,7 +247,8 @@
           annotation.normalTop = annotation.top / inst.scale;
           annotation.normalFontSize = annotation.fontSize / inst.scale;
 
-          inst.onAnnotationUpdate();
+          const json = inst.saveAnnotationToJSON(annotation.id);
+          inst.onAnnotationUpdate(json);
         });
 
         if (
@@ -261,37 +262,35 @@
 
     this.fabricClickHandler = function (event, fabricObj) {
       var inst = this;
-      if (inst.active_tool != 0) {
-        if (inst.active_tool == 2) {
-          const text = new fabric.IText("Sample text", {
-            left:
-              event.clientX -
-              fabricObj.upperCanvasEl.getBoundingClientRect().left,
-            top:
-              event.clientY -
-              fabricObj.upperCanvasEl.getBoundingClientRect().top,
-            fill: inst.color,
-            fontSize: inst.font_size * inst.scale,
-            selectable: true,
-            hasRotatingPoint: false,
-            id: Date.now(),
-            normalTop: 0,
-            normalLeft: 0,
-            normalFontSize: 0,
-            hasControls: false,
-            selectable: !inst.readOnly,
-            borderColor: inst.controlColor,
-            padding: inst.padding,
-          });
+      if (inst.active_tool == 2) {
+        const text = new fabric.IText("Sample text", {
+          left:
+            event.clientX -
+            fabricObj.upperCanvasEl.getBoundingClientRect().left,
+          top:
+            event.clientY - fabricObj.upperCanvasEl.getBoundingClientRect().top,
+          fill: inst.color,
+          fontSize: inst.font_size * inst.scale,
+          selectable: true,
+          hasRotatingPoint: false,
+          id: Date.now(),
+          normalTop: 0,
+          normalLeft: 0,
+          normalFontSize: 0,
+          hasControls: false,
+          selectable: !inst.readOnly,
+          borderColor: inst.controlColor,
+          padding: inst.padding,
+        });
 
-          text.normalLeft = text.left / inst.scale;
-          text.normalTop = text.top / inst.scale;
-          text.normalFontSize = text.fontSize / inst.scale;
+        text.normalLeft = text.left / inst.scale;
+        text.normalTop = text.top / inst.scale;
+        text.normalFontSize = text.fontSize / inst.scale;
 
-          fabricObj.add(text);
-          inst.active_tool = 0;
-        }
-        this.onAnnotationCreate();
+        fabricObj.add(text);
+        inst.active_tool = 0;
+        const json = this.saveAnnotationToJSON(text.id);
+        this.onAnnotationCreate(json);
       }
     };
   };
@@ -317,12 +316,16 @@
   };
 
   PDFAnnotate.prototype.deleteSelectedObject = function () {
-    var inst = this;
-    var activeObject = inst.fabricObjects[inst.active_canvas].getActiveObject();
+    const activeObject =
+      this.fabricObjects[this.active_canvas].getActiveObject();
+    if (!activeObject) return;
+    const id = activeObject.id;
+    console.log(activeObject);
     if (activeObject) {
       if (confirm("Are you sure ?")) {
-        inst.fabricObjects[inst.active_canvas].remove(activeObject);
-        this.onAnnotationDelete();
+        const json = this.saveAnnotationToJSON(id);
+        this.fabricObjects[this.active_canvas].remove(activeObject);
+        this.onAnnotationDelete(json);
       }
     }
   };
@@ -370,6 +373,43 @@
       ]);
     });
     return JSON.stringify(array);
+  };
+
+  PDFAnnotate.prototype.saveAnnotationToJSON = function (annotationId) {
+    var inst = this;
+
+    const array = inst.fabricObjects.map(function (fabricObject) {
+      return fabricObject.toJSON([
+        "id",
+        "normalLeft",
+        "normalTop",
+        "normalFontSize",
+        "padding",
+      ]);
+    });
+
+    const annotations = [];
+    array.forEach(function (page, index) {
+      page.objects.forEach(function (object) {
+        annotations.push({
+          id: object.id,
+          type: object.type,
+          page: index,
+          x: object.normalLeft,
+          y: object.normalTop,
+          color: object.fill,
+          content: object.text,
+          fontSize: object.normalFontSize,
+          padding: object.padding,
+        });
+      });
+    });
+
+    return JSON.stringify(
+      annotations.filter(function (annotation) {
+        return annotation.id === annotationId;
+      })[0]
+    );
   };
 
   PDFAnnotate.prototype.saveToJSON = function () {
