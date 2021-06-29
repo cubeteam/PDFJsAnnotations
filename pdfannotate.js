@@ -427,7 +427,6 @@
 
   PDFAnnotate.prototype.saveAnnotationToJSON = function (annotationId) {
     var inst = this;
-
     const array = inst.optionsFabric.fabricObjects.map(function (fabricObject) {
       return fabricObject.toJSON([
         "id",
@@ -437,6 +436,11 @@
         "padding",
       ]);
     });
+
+    const pageHeight =
+      inst.optionsFabric.fabricObjects[0].height / inst.optionsCubeTeam.scale;
+    const pageWidth =
+      inst.optionsFabric.fabricObjects[0].width / inst.optionsCubeTeam.scale;
 
     const annotations = [];
     array.forEach(function (page, index) {
@@ -451,6 +455,8 @@
           content: object.text,
           fontSize: object.normalFontSize,
           padding: object.padding,
+          pageWidth: pageWidth,
+          pageHeight: pageHeight,
         });
       });
     });
