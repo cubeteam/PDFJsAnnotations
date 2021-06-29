@@ -5,20 +5,21 @@ var pdf = new PDFAnnotate("pdf.pdf", {
   ready() {
     console.log("Plugin initialized successfully");
   },
-  scale: "fit",
-  pageImageCompression: "MEDIUM", // FAST, MEDIUM, SLOW(Helps to control the new PDF file size)
-  container_id: "pdf-container",
-  component_id: "my-pdf-viewer",
-  readOnly: false,
+  optionsCubeTeam: {
+    scale: "fit",
+    container_id: "pdf-container",
+    component_id: "my-pdf-viewer",
+    readOnly: false,
 
-  onAnnotationCreate: function () {
-    console.log("create");
-  },
-  onAnnotationUpdate: function () {
-    console.log("udpate");
-  },
-  onAnnotationDelete: function () {
-    console.log("delete");
+    onAnnotationCreate: function () {
+      console.log("create");
+    },
+    onAnnotationUpdate: function (id) {
+      console.log("udpate", id);
+    },
+    onAnnotationDelete: function (id) {
+      console.log("delete", id);
+    },
   },
 });
 

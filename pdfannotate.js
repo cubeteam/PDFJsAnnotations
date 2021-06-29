@@ -35,42 +35,44 @@
   };
 
   let PDFAnnotate = function (url, options = {}) {
-    this.number_of_pages = 0;
-    this.pages_rendered = 0;
-    this.active_tool = 1; // 1 - Free hand, 2 - Text, 3 - Arrow, 4 - Rectangle
-    this.fabricObjects = [];
-    this.fabricObjectsData = [];
-    this.color = "#528cbd";
-    this.borderSize = 1;
-    this.font_size = 16;
-    this.padding = 2;
-    this.active_canvas = 0;
-    this.url = url;
-    this.pageImageCompression = options.pageImageCompression;
+    this.optionsFabric = {
+      number_of_pages: 0,
+      pages_rendered: 0,
+      active_tool: 1, // 1 - Free hand, 2 - Text, 3 - Arrow, 4 - Rectangle
+      fabricObjects: [],
+      fabricObjectsData: [],
+      color: "#528cbd",
+      borderSize: 1,
+      font_size: 16,
+      padding: 2,
+      active_canvas: 0,
+    };
+    this.optionsCubeTeam = {
+      //dom id
+      container_id: "",
+      component_id: "",
+
+      //scale; <int || fit>
+      scale: 1,
+      scaleMIN: 0.1,
+      scaleMAX: 5,
+
+      //step
+      step: 0.1,
+
+      //mode
+      readOnly: true,
+
+      //controls settings
+      controlColor: "#000000",
+
+      //calback functions
+      onAnnotationCreate: function () {},
+      onAnnotationUpdate: function () {},
+      onAnnotationDelete: function () {},
+    };
+
     var inst = this;
-
-    //dom id
-    this.container_id = "";
-    this.component_id = "";
-
-    //scale; <int || fit>
-    this.scale = 1;
-    this.scaleMIN = 0.1;
-    this.scaleMAX = 1.3;
-
-    //step
-    this.step = 0.1;
-
-    //mode
-    this.readOnly = true;
-
-    //controls settings
-    this.controlColor = "#000000";
-
-    //calback functions
-    this.onAnnotationCreate = function () {};
-    this.onAnnotationUpdate = function () {};
-    this.onAnnotationDelete = function () {};
 
     //loadPDF on startup
     var loadingTask = pdfjsLib.getDocument(url);
@@ -85,7 +87,10 @@
     );
 
     this.setOptions = function (options) {
-      Object.assign(this, options);
+      if (options.optionsFabric)
+        Object.assign(this.optionsFabric, options.optionsFabric);
+      if (options.optionsCubeTeam)
+        Object.assign(this.optionsCubeTeam, options.optionsCubeTeam);
     };
 
     this.getFirstPage = function () {
@@ -96,24 +101,32 @@
 
     this.zoomIn = function () {
       this.render({
-        scale: this.scale + this.step,
+        optionsCubeTeam: {
+          scale: this.optionsCubeTeam.scale + this.optionsCubeTeam.step,
+        },
       });
     };
 
     this.zoomOut = function () {
       this.render({
-        scale: this.scale - this.step,
+        optionsCubeTeam: {
+          scale: this.optionsCubeTeam.scale - this.optionsCubeTeam.step,
+        },
       });
     };
 
     this.fit = function () {
       this.render({
-        scale: "fit",
+        optionsCubeTeam: {
+          scale: "fit",
+        },
       });
     };
 
     this.getCurrentPage = function () {
-      const component = document.getElementById(this.component_id);
+      const component = document.getElementById(
+        this.optionsCubeTeam.component_id
+      );
       const scrollTop = component.scrollTop + 10;
 
       const page = document.getElementsByClassName("canvas-container")[0];
@@ -127,8 +140,10 @@
 
     this.nextPage = function () {
       const currentPage = this.getCurrentPage();
-      if (currentPage + 1 < this.number_of_pages) {
-        const component = document.getElementById(this.component_id);
+      if (currentPage + 1 < this.optionsFabric.number_of_pages) {
+        const component = document.getElementById(
+          this.optionsCubeTeam.component_id
+        );
         const page = document.getElementsByClassName("canvas-container")[0];
         const style = page.currentStyle || window.getComputedStyle(page);
         const pageContainerMargin = parseInt(
@@ -142,7 +157,9 @@
     this.previousPage = function () {
       const currentPage = this.getCurrentPage();
       if (currentPage - 1 >= 0) {
-        const component = document.getElementById(this.component_id);
+        const component = document.getElementById(
+          this.optionsCubeTeam.component_id
+        );
         const page = document.getElementsByClassName("canvas-container")[0];
         const style = page.currentStyle || window.getComputedStyle(page);
         const pageContainerMargin = parseInt(
@@ -158,25 +175,33 @@
       const pdf = this.pdf;
 
       const json = this.saveToFullJSON();
-      this.pages_rendered = 0;
-      this.fabricObjects = [];
+      this.optionsFabric.pages_rendered = 0;
+      this.optionsFabric.fabricObjects = [];
 
-      const container = document.getElementById(inst.container_id);
-      const component = document.getElementById(inst.component_id);
+      const container = document.getElementById(
+        inst.optionsCubeTeam.container_id
+      );
+      const component = document.getElementById(
+        inst.optionsCubeTeam.component_id
+      );
       container.innerHTML = "";
       const componentHeight = component.clientHeight;
 
-      if (this.scale == "fit") {
+      if (this.optionsCubeTeam.scale == "fit") {
         const page = await this.getFirstPage();
-        this.scale = componentHeight / page._pageInfo.view[3];
-      } else if (this.scale > this.scaleMAX) this.scale = this.scaleMAX;
-      else if (this.scale < this.scaleMIN) this.scale = this.scaleMIN;
+        this.optionsCubeTeam.scale = componentHeight / page._pageInfo.view[3];
+      } else if (this.optionsCubeTeam.scale > this.optionsCubeTeam.scaleMAX)
+        this.optionsCubeTeam.scale = this.optionsCubeTeam.scaleMAX;
+      else if (this.optionsCubeTeam.scale < this.optionsCubeTeam.scaleMIN)
+        this.optionsCubeTeam.scale = this.optionsCubeTeam.scaleMIN;
 
-      inst.number_of_pages = pdf.numPages;
+      inst.optionsFabric.number_of_pages = pdf.numPages;
 
       for (var i = 1; i <= pdf.numPages; i++) {
         pdf.getPage(i).then(function (page) {
-          var viewport = page.getViewport({ scale: inst.scale });
+          var viewport = page.getViewport({
+            scale: inst.optionsCubeTeam.scale,
+          });
           var canvas = document.createElement("canvas");
           container.appendChild(canvas);
           canvas.className = "pdf-canvas";
@@ -193,8 +218,11 @@
             $(".pdf-canvas").each(function (index, el) {
               $(el).attr("id", "page-" + (index + 1) + "-canvas");
             });
-            inst.pages_rendered++;
-            if (inst.pages_rendered == inst.number_of_pages) {
+            inst.optionsFabric.pages_rendered++;
+            if (
+              inst.optionsFabric.pages_rendered ==
+              inst.optionsFabric.number_of_pages
+            ) {
               inst.initFabric();
               if (json) inst.loadFromFullJSON(JSON.parse(json));
             }
@@ -205,26 +233,29 @@
 
     this.initFabric = function () {
       var inst = this;
-      let canvases = $("#" + inst.container_id + " canvas");
+      let canvases = $("#" + inst.optionsCubeTeam.container_id + " canvas");
       canvases.each(function (index, el) {
         var background = el.toDataURL("image/png");
         var fabricObj = new fabric.Canvas(el.id, {
           freeDrawingBrush: {
             width: 1,
-            color: inst.color,
+            color: inst.optionsFabric.color,
           },
           selection: false,
         });
 
-        inst.fabricObjects.push(fabricObj);
+        inst.optionsFabric.fabricObjects.push(fabricObj);
         if (typeof options.onPageUpdated == "function") {
           fabricObj.on("object:added", function () {
-            var oldValue = Object.assign({}, inst.fabricObjectsData[index]);
-            inst.fabricObjectsData[index] = fabricObj.toJSON();
+            var oldValue = Object.assign(
+              {},
+              inst.optionsFabric.fabricObjectsData[index]
+            );
+            inst.optionsFabric.fabricObjectsData[index] = fabricObj.toJSON();
             options.onPageUpdated(
               index + 1,
               oldValue,
-              inst.fabricObjectsData[index]
+              inst.optionsFabric.fabricObjectsData[index]
             );
           });
         }
@@ -233,22 +264,23 @@
           fabricObj.renderAll.bind(fabricObj)
         );
         $(fabricObj.upperCanvasEl).click(function (event) {
-          inst.active_canvas = index;
+          inst.optionsFabric.active_canvas = index;
           inst.fabricClickHandler(event, fabricObj);
         });
         fabricObj.on("after:render", function () {
-          inst.fabricObjectsData[index] = fabricObj.toJSON();
+          inst.optionsFabric.fabricObjectsData[index] = fabricObj.toJSON();
           fabricObj.off("after:render");
         });
 
         fabricObj.on("object:modified", function (event) {
           const annotation = event.target;
-          annotation.normalLeft = annotation.left / inst.scale;
-          annotation.normalTop = annotation.top / inst.scale;
-          annotation.normalFontSize = annotation.fontSize / inst.scale;
+          annotation.normalLeft = annotation.left / inst.optionsCubeTeam.scale;
+          annotation.normalTop = annotation.top / inst.optionsCubeTeam.scale;
+          annotation.normalFontSize =
+            annotation.fontSize / inst.optionsCubeTeam.scale;
 
           const json = inst.saveAnnotationToJSON(annotation.id);
-          inst.onAnnotationUpdate(json);
+          inst.optionsCubeTeam.onAnnotationUpdate(json);
         });
 
         if (
@@ -262,15 +294,15 @@
 
     this.fabricClickHandler = function (event, fabricObj) {
       var inst = this;
-      if (inst.active_tool == 2) {
+      if (inst.optionsFabric.active_tool == 2) {
         const text = new fabric.IText("Sample text", {
           left:
             event.clientX -
             fabricObj.upperCanvasEl.getBoundingClientRect().left,
           top:
             event.clientY - fabricObj.upperCanvasEl.getBoundingClientRect().top,
-          fill: inst.color,
-          fontSize: inst.font_size * inst.scale,
+          fill: inst.optionsFabric.color,
+          fontSize: inst.optionsFabric.font_size * inst.optionsCubeTeam.scale,
           selectable: true,
           hasRotatingPoint: false,
           id: Date.now(),
@@ -278,28 +310,28 @@
           normalLeft: 0,
           normalFontSize: 0,
           hasControls: false,
-          selectable: !inst.readOnly,
-          borderColor: inst.controlColor,
-          padding: inst.padding,
+          selectable: !inst.optionsCubeTeam.readOnly,
+          borderColor: inst.optionsCubeTeam.controlColor,
+          padding: inst.optionsFabric.padding,
         });
 
-        text.normalLeft = text.left / inst.scale;
-        text.normalTop = text.top / inst.scale;
-        text.normalFontSize = text.fontSize / inst.scale;
+        text.normalLeft = text.left / inst.optionsCubeTeam.scale;
+        text.normalTop = text.top / inst.optionsCubeTeam.scale;
+        text.normalFontSize = text.fontSize / inst.optionsCubeTeam.scale;
 
         fabricObj.add(text);
-        inst.active_tool = 0;
+        inst.optionsFabric.active_tool = 0;
         const json = this.saveAnnotationToJSON(text.id);
-        this.onAnnotationCreate(json);
+        this.optionsCubeTeam.onAnnotationCreate(json);
       }
     };
   };
 
   PDFAnnotate.prototype.enableSelector = function () {
     var inst = this;
-    inst.active_tool = 0;
-    if (inst.fabricObjects.length > 0) {
-      $.each(inst.fabricObjects, function (index, fabricObj) {
+    inst.optionsFabric.active_tool = 0;
+    if (inst.optionsFabric.fabricObjects.length > 0) {
+      $.each(inst.optionsFabric.fabricObjects, function (index, fabricObj) {
         fabricObj.isDrawingMode = false;
       });
     }
@@ -307,9 +339,9 @@
 
   PDFAnnotate.prototype.enableAddText = function () {
     var inst = this;
-    inst.active_tool = 2;
-    if (inst.fabricObjects.length > 0) {
-      $.each(inst.fabricObjects, function (index, fabricObj) {
+    inst.optionsFabric.active_tool = 2;
+    if (inst.optionsFabric.fabricObjects.length > 0) {
+      $.each(inst.optionsFabric.fabricObjects, function (index, fabricObj) {
         fabricObj.isDrawingMode = false;
       });
     }
@@ -317,15 +349,19 @@
 
   PDFAnnotate.prototype.deleteSelectedObject = function () {
     const activeObject =
-      this.fabricObjects[this.active_canvas].getActiveObject();
+      this.optionsFabric.fabricObjects[
+        this.optionsFabric.active_canvas
+      ].getActiveObject();
     if (!activeObject) return;
     const id = activeObject.id;
     console.log(activeObject);
     if (activeObject) {
       if (confirm("Are you sure ?")) {
         const json = this.saveAnnotationToJSON(id);
-        this.fabricObjects[this.active_canvas].remove(activeObject);
-        this.onAnnotationDelete(json);
+        this.optionsFabric.fabricObjects[
+          this.optionsFabric.active_canvas
+        ].remove(activeObject);
+        this.optionsCubeTeam.onAnnotationDelete(json);
       }
     }
   };
@@ -333,7 +369,7 @@
   PDFAnnotate.prototype.deleteAllObjects = function () {
     var inst = this;
     if (confirm("Are you sure ?")) {
-      inst.fabricObjects.forEach(function (page) {
+      inst.optionsFabric.fabricObjects.forEach(function (page) {
         page.remove(...page.getObjects());
       });
     }
@@ -341,30 +377,30 @@
 
   PDFAnnotate.prototype.setBrushSize = function (size) {
     var inst = this;
-    $.each(inst.fabricObjects, function (index, fabricObj) {
+    $.each(inst.optionsFabric.fabricObjects, function (index, fabricObj) {
       fabricObj.freeDrawingBrush.width = size;
     });
   };
 
   PDFAnnotate.prototype.setColor = function (color) {
     var inst = this;
-    inst.color = color;
-    $.each(inst.fabricObjects, function (index, fabricObj) {
+    inst.optionsFabric.color = color;
+    $.each(inst.optionsFabric.fabricObjects, function (index, fabricObj) {
       fabricObj.freeDrawingBrush.color = color;
     });
   };
 
   PDFAnnotate.prototype.setFontSize = function (size) {
-    this.font_size = size;
+    this.optionsFabric.font_size = size;
   };
 
   PDFAnnotate.prototype.setBorderSize = function (size) {
-    this.borderSize = size;
+    this.optionsFabric.borderSize = size;
   };
 
   PDFAnnotate.prototype.saveToFullJSON = function () {
     var inst = this;
-    const array = inst.fabricObjects.map((fabricObject) => {
+    const array = inst.optionsFabric.fabricObjects.map((fabricObject) => {
       return fabricObject.toJSON([
         "id",
         "normalLeft",
@@ -378,7 +414,7 @@
   PDFAnnotate.prototype.saveAnnotationToJSON = function (annotationId) {
     var inst = this;
 
-    const array = inst.fabricObjects.map(function (fabricObject) {
+    const array = inst.optionsFabric.fabricObjects.map(function (fabricObject) {
       return fabricObject.toJSON([
         "id",
         "normalLeft",
@@ -414,7 +450,7 @@
 
   PDFAnnotate.prototype.saveToJSON = function () {
     var inst = this;
-    const array = inst.fabricObjects.map(function (fabricObject) {
+    const array = inst.optionsFabric.fabricObjects.map(function (fabricObject) {
       return fabricObject.toJSON([
         "id",
         "normalLeft",
@@ -447,7 +483,7 @@
   PDFAnnotate.prototype.loadFromJSON = function (jsonData) {
     var inst = this;
     //remove all annotations
-    $.each(inst.fabricObjects, function (index, fabricObj) {
+    $.each(inst.optionsFabric.fabricObjects, function (index, fabricObj) {
       fabricObj.remove(...fabricObj.getObjects());
     });
 
@@ -461,25 +497,27 @@
         fill: object.color,
         text: object.content,
         normalFontSize: object.fontSize,
-        left: object.x * inst.scale,
-        top: object.y * inst.scale,
-        fontSize: object.fontSize * inst.scale,
+        left: object.x * inst.optionsCubeTeam.scale,
+        top: object.y * inst.optionsCubeTeam.scale,
+        fontSize: object.fontSize * inst.optionsCubeTeam.scale,
         hasControls: false,
-        selectable: !inst.readOnly,
-        borderColor: inst.controlColor,
+        selectable: !inst.optionsCubeTeam.readOnly,
+        borderColor: inst.optionsCubeTeam.controlColor,
         padding: object.padding,
       };
     });
 
     annotations.forEach(function (annotation) {
       let pageIndex = annotation.page;
-      inst.fabricObjects[pageIndex].add(new fabric.IText("", annotation));
+      inst.optionsFabric.fabricObjects[pageIndex].add(
+        new fabric.IText("", annotation)
+      );
     });
   };
 
   PDFAnnotate.prototype.saveToFullJSON = function () {
     var inst = this;
-    const array = inst.fabricObjects.map((fabricObject) => {
+    const array = inst.optionsFabric.fabricObjects.map((fabricObject) => {
       return fabricObject.toJSON([
         "id",
         "normalLeft",
@@ -495,27 +533,27 @@
     var inst = this;
 
     //remove all annotations
-    $.each(inst.fabricObjects, function (index, fabricObj) {
+    $.each(inst.optionsFabric.fabricObjects, function (index, fabricObj) {
       fabricObj.remove(...fabricObj.getObjects());
     });
 
-    $.each(inst.fabricObjects, function (index, fabricObj) {
+    $.each(inst.optionsFabric.fabricObjects, function (index, fabricObj) {
       if (jsonData.length > index) {
         //remove backgroundImage
         jsonData[index].backgroundImage = null;
 
         //set properties to objects
         jsonData[index].objects.forEach(function (object) {
-          object.left = object.normalLeft * inst.scale;
-          object.top = object.normalTop * inst.scale;
-          object.fontSize = object.normalFontSize * inst.scale;
-          object.selectable = !inst.readOnly;
-          object.borderColor = inst.controlColor;
+          object.left = object.normalLeft * inst.optionsCubeTeam.scale;
+          object.top = object.normalTop * inst.optionsCubeTeam.scale;
+          object.fontSize = object.normalFontSize * inst.optionsCubeTeam.scale;
+          object.selectable = !inst.optionsCubeTeam.readOnly;
+          object.borderColor = inst.optionsCubeTeam.controlColor;
           object.hasControls = false;
         });
 
         fabricObj.loadFromJSON(jsonData[index], function () {
-          inst.fabricObjectsData[index] = fabricObj.toJSON();
+          inst.optionsFabric.fabricObjectsData[index] = fabricObj.toJSON();
         });
       }
     });
