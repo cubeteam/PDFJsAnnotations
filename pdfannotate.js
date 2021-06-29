@@ -138,6 +138,20 @@
       return Math.floor(scrollTop / pageHeight);
     };
 
+    this.hasPageScrollOffset = function () {
+      const component = document.getElementById(
+        this.optionsCubeTeam.component_id
+      );
+
+      const page = document.getElementsByClassName("canvas-container")[0];
+      const style = page.currentStyle || window.getComputedStyle(page);
+      const pageContainerMargin = parseInt(
+        style.marginBottom.replace("px", "")
+      );
+      const pageHeight = page.offsetHeight + pageContainerMargin;
+      return component.scrollTop % pageHeight > 10;
+    };
+
     this.nextPage = function () {
       const currentPage = this.getCurrentPage();
       if (currentPage + 1 < this.optionsFabric.number_of_pages) {
@@ -155,19 +169,19 @@
     };
 
     this.previousPage = function () {
-      const currentPage = this.getCurrentPage();
-      if (currentPage - 1 >= 0) {
-        const component = document.getElementById(
-          this.optionsCubeTeam.component_id
-        );
-        const page = document.getElementsByClassName("canvas-container")[0];
-        const style = page.currentStyle || window.getComputedStyle(page);
-        const pageContainerMargin = parseInt(
-          style.marginBottom.replace("px", "")
-        );
-        const pageHeight = page.offsetHeight + pageContainerMargin;
-        component.scrollTop = (currentPage - 1) * pageHeight + 10;
-      }
+      let currentPage = this.getCurrentPage();
+      if (!this.hasPageScrollOffset()) currentPage -= 1;
+
+      const component = document.getElementById(
+        this.optionsCubeTeam.component_id
+      );
+      const page = document.getElementsByClassName("canvas-container")[0];
+      const style = page.currentStyle || window.getComputedStyle(page);
+      const pageContainerMargin = parseInt(
+        style.marginBottom.replace("px", "")
+      );
+      const pageHeight = page.offsetHeight + pageContainerMargin;
+      component.scrollTop = currentPage * pageHeight + 10;
     };
 
     this.render = async function (options) {
