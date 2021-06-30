@@ -434,14 +434,10 @@
         "normalTop",
         "normalFontSize",
         "padding",
+        "height",
+        "width",
       ]);
     });
-
-    const pageHeight =
-      inst.optionsFabric.fabricObjects[0].height / inst.optionsCubeTeam.scale;
-    const pageWidth =
-      inst.optionsFabric.fabricObjects[0].width / inst.optionsCubeTeam.scale;
-
     const annotations = [];
     array.forEach(function (page, index) {
       page.objects.forEach(function (object) {
@@ -455,8 +451,8 @@
           content: object.text,
           fontSize: object.normalFontSize,
           padding: object.padding,
-          pageWidth: pageWidth,
-          pageHeight: pageHeight,
+          pageWidth: page.width / inst.optionsCubeTeam.scale,
+          pageHeight: page.height / inst.optionsCubeTeam.scale,
         });
       });
     });
