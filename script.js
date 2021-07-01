@@ -11,14 +11,14 @@ var pdf = new PDFAnnotate("pdf.pdf", {
     component_id: "my-pdf-viewer",
     readOnly: false,
 
-    onAnnotationCreate: function () {
-      console.log("create");
+    onAnnotationCreate: function (annotation) {
+      console.log("create", annotation);
     },
-    onAnnotationUpdate: function (id) {
-      console.log("udpate", id);
+    onAnnotationUpdate: function (annotation) {
+      console.log("udpate", annotation);
     },
-    onAnnotationDelete: function (id) {
-      console.log("delete", id);
+    onAnnotationDelete: function (annotation) {
+      console.log("delete", annotation);
     },
   },
 });

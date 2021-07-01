@@ -188,7 +188,7 @@
       this.setOptions(options);
       const pdf = this.pdf;
 
-      const json = this.saveToFullJSON();
+      const json = this._export();
       this.optionsFabric.pages_rendered = 0;
       this.optionsFabric.fabricObjects = [];
 
@@ -238,7 +238,7 @@
               inst.optionsFabric.number_of_pages
             ) {
               inst.initFabric();
-              if (json) inst.loadFromFullJSON(JSON.parse(json));
+              if (json) inst._import(json);
             }
           });
         });
@@ -293,7 +293,7 @@
           annotation.normalFontSize =
             annotation.fontSize / inst.optionsCubeTeam.scale;
 
-          const json = inst.saveAnnotationToJSON(annotation.id);
+          const json = inst.exportAnnotation(annotation.id);
           inst.optionsCubeTeam.onAnnotationUpdate(json);
         });
 
@@ -335,7 +335,7 @@
 
         fabricObj.add(text);
         inst.optionsFabric.active_tool = 0;
-        const json = this.saveAnnotationToJSON(text.id);
+        const json = this.exportAnnotation(text.id);
         this.optionsCubeTeam.onAnnotationCreate(json);
       }
     };
@@ -371,7 +371,7 @@
     console.log(activeObject);
     if (activeObject) {
       if (confirm("Are you sure ?")) {
-        const json = this.saveAnnotationToJSON(id);
+        const json = this.exportAnnotation(id);
         this.optionsFabric.fabricObjects[
           this.optionsFabric.active_canvas
         ].remove(activeObject);
@@ -412,7 +412,7 @@
     this.optionsFabric.borderSize = size;
   };
 
-  PDFAnnotate.prototype.saveToFullJSON = function () {
+  PDFAnnotate.prototype._export = function () {
     var inst = this;
     const array = inst.optionsFabric.fabricObjects.map((fabricObject) => {
       return fabricObject.toJSON([
@@ -422,10 +422,18 @@
         "normalFontSize",
       ]);
     });
-    return JSON.stringify(array);
+    return array;
   };
 
-  PDFAnnotate.prototype.saveAnnotationToJSON = function (annotationId) {
+  PDFAnnotate.prototype.exportAnnotation = function (annotationId) {
+    const annotations = this.export();
+
+    return annotations.find(function (annotation) {
+      return annotation.id === annotationId;
+    });
+  };
+
+  PDFAnnotate.prototype.export = function () {
     var inst = this;
     const array = inst.optionsFabric.fabricObjects.map(function (fabricObject) {
       return fabricObject.toJSON([
@@ -457,46 +465,10 @@
       });
     });
 
-    return JSON.stringify(
-      annotations.filter(function (annotation) {
-        return annotation.id === annotationId;
-      })[0]
-    );
+    return annotations;
   };
 
-  PDFAnnotate.prototype.saveToJSON = function () {
-    var inst = this;
-    const array = inst.optionsFabric.fabricObjects.map(function (fabricObject) {
-      return fabricObject.toJSON([
-        "id",
-        "normalLeft",
-        "normalTop",
-        "normalFontSize",
-        "padding",
-      ]);
-    });
-
-    const annotations = [];
-    array.forEach(function (page, index) {
-      page.objects.forEach(function (object) {
-        annotations.push({
-          id: object.id,
-          type: object.type,
-          page: index,
-          x: object.normalLeft,
-          y: object.normalTop,
-          color: object.fill,
-          content: object.text,
-          fontSize: object.normalFontSize,
-          padding: object.padding,
-        });
-      });
-    });
-
-    return JSON.stringify(annotations);
-  };
-
-  PDFAnnotate.prototype.loadFromJSON = function (jsonData) {
+  PDFAnnotate.prototype.import = function (jsonData) {
     var inst = this;
     //remove all annotations
     $.each(inst.optionsFabric.fabricObjects, function (index, fabricObj) {
@@ -531,21 +503,7 @@
     });
   };
 
-  PDFAnnotate.prototype.saveToFullJSON = function () {
-    var inst = this;
-    const array = inst.optionsFabric.fabricObjects.map((fabricObject) => {
-      return fabricObject.toJSON([
-        "id",
-        "normalLeft",
-        "normalTop",
-        "normalFontSize",
-        "padding",
-      ]);
-    });
-    return JSON.stringify(array);
-  };
-
-  PDFAnnotate.prototype.loadFromFullJSON = function (jsonData) {
+  PDFAnnotate.prototype._import = function (jsonData) {
     var inst = this;
 
     //remove all annotations
