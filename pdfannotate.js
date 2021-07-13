@@ -339,6 +339,7 @@
         text.enterEditing();
 
         fabricObj.add(text);
+        inst.optionsFabric.active_tool = 0;
         const json = this.exportAnnotation(text.id);
         this.optionsCubeTeam.onAnnotationCreate(json);
       }
