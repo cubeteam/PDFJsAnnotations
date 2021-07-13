@@ -308,8 +308,11 @@
 
     this.fabricClickHandler = function (event, fabricObj) {
       var inst = this;
+
+      inst.disableITextEditing();
+
       if (inst.optionsFabric.active_tool == 2) {
-        const text = new fabric.IText("Sample text", {
+        const text = new fabric.IText("", {
           left:
             event.clientX -
             fabricObj.upperCanvasEl.getBoundingClientRect().left,
@@ -333,16 +336,28 @@
         text.normalTop = text.top / inst.optionsCubeTeam.scale;
         text.normalFontSize = text.fontSize / inst.optionsCubeTeam.scale;
 
+        text.enterEditing();
+
         fabricObj.add(text);
-        inst.optionsFabric.active_tool = 0;
         const json = this.exportAnnotation(text.id);
         this.optionsCubeTeam.onAnnotationCreate(json);
       }
     };
   };
 
+  PDFAnnotate.prototype.disableITextEditing = function () {
+    var inst = this;
+
+    inst.optionsFabric.fabricObjects.forEach(function (obj) {
+      obj._objects.forEach(function (iText) {
+        iText.exitEditing();
+      });
+    });
+  };
+
   PDFAnnotate.prototype.enableSelector = function () {
     var inst = this;
+    inst.disableITextEditing();
     inst.optionsFabric.active_tool = 0;
     if (inst.optionsFabric.fabricObjects.length > 0) {
       $.each(inst.optionsFabric.fabricObjects, function (index, fabricObj) {
@@ -353,6 +368,8 @@
 
   PDFAnnotate.prototype.enableAddText = function () {
     var inst = this;
+    console.log(inst);
+    inst.disableITextEditing();
     inst.optionsFabric.active_tool = 2;
     if (inst.optionsFabric.fabricObjects.length > 0) {
       $.each(inst.optionsFabric.fabricObjects, function (index, fabricObj) {
