@@ -339,7 +339,6 @@
         text.enterEditing();
 
         fabricObj.add(text);
-        inst.optionsFabric.active_tool = 0;
         const json = this.exportAnnotation(text.id);
         this.optionsCubeTeam.onAnnotationCreate(json);
       }
@@ -379,23 +378,29 @@
     }
   };
 
+  PDFAnnotate.prototype.getSelectedObject = function () {
+    return this.optionsFabric.fabricObjects[
+      this.optionsFabric.active_canvas
+    ].getActiveObject();
+  };
+
   PDFAnnotate.prototype.deleteSelectedObject = function () {
-    const activeObject =
-      this.optionsFabric.fabricObjects[
-        this.optionsFabric.active_canvas
-      ].getActiveObject();
+    const activeObject = this.getSelectedObject();
     if (!activeObject) return;
+
     const id = activeObject.id;
-    console.log(activeObject);
-    if (activeObject) {
-      if (confirm("Are you sure ?")) {
-        const json = this.exportAnnotation(id);
-        this.optionsFabric.fabricObjects[
-          this.optionsFabric.active_canvas
-        ].remove(activeObject);
-        this.optionsCubeTeam.onAnnotationDelete(json);
-      }
+    if (confirm("Are you sure ?")) {
+      const json = this.exportAnnotation(id);
+      this.optionsFabric.fabricObjects[this.optionsFabric.active_canvas].remove(
+        activeObject
+      );
+      this.optionsCubeTeam.onAnnotationDelete(json);
     }
+  };
+
+  PDFAnnotate.prototype.editSelectedObject = function () {
+    const activeObject = this.getSelectedObject();
+    if (activeObject) activeObject.enterEditing();
   };
 
   PDFAnnotate.prototype.deleteAllObjects = function () {

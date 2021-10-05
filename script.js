@@ -43,6 +43,11 @@ function enableAddText(event) {
   pdf.enableAddText();
 }
 
+function editText(event) {
+  event.preventDefault();
+  pdf.editSelectedObject();
+}
+
 function deleteSelectedObject(event) {
   event.preventDefault();
   pdf.deleteSelectedObject();
