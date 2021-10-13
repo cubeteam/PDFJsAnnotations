@@ -350,7 +350,7 @@
 
     inst.optionsFabric.fabricObjects.forEach(function (obj) {
       obj._objects.forEach(function (iText) {
-        iText.exitEditing();
+        if (iText.isEditing) iText.exitEditing();
       });
     });
   };
