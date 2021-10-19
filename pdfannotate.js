@@ -38,7 +38,7 @@
     this.optionsFabric = {
       number_of_pages: 0,
       pages_rendered: 0,
-      active_tool: 1, // 1 - Free hand, 2 - Text, 3 - Arrow, 4 - Rectangle
+      active_tool: 1, // 1 - Free hand, 2 - Text, 3 - Edit Text
       fabricObjects: [],
       fabricObjectsData: [],
       color: "#528cbd",
@@ -285,7 +285,13 @@
           inst.optionsFabric.fabricObjectsData[index] = fabricObj.toJSON();
           fabricObj.off("after:render");
         });
-
+        fabricObj.on("selection:created", function (event) {
+          if (inst.optionsFabric.active_tool == 3) {
+            event.target.enterEditing();
+            event.target.setSelectionStart(event.target.text.length);
+            event.target.setSelectionEnd(event.target.text.length);
+          }
+        });
         fabricObj.on("object:modified", function (event) {
           const annotation = event.target;
           annotation.normalLeft = annotation.left / inst.optionsCubeTeam.scale;
@@ -308,8 +314,6 @@
 
     this.fabricClickHandler = function (event, fabricObj) {
       var inst = this;
-
-      inst.disableITextEditing();
 
       if (inst.optionsFabric.active_tool == 2) {
         const text = new fabric.IText("", {
@@ -368,9 +372,19 @@
 
   PDFAnnotate.prototype.enableAddText = function () {
     var inst = this;
-    console.log(inst);
     inst.disableITextEditing();
     inst.optionsFabric.active_tool = 2;
+    if (inst.optionsFabric.fabricObjects.length > 0) {
+      $.each(inst.optionsFabric.fabricObjects, function (index, fabricObj) {
+        fabricObj.isDrawingMode = false;
+      });
+    }
+  };
+
+  PDFAnnotate.prototype.enableEditText = function () {
+    var inst = this;
+    inst.disableITextEditing();
+    inst.optionsFabric.active_tool = 3;
     if (inst.optionsFabric.fabricObjects.length > 0) {
       $.each(inst.optionsFabric.fabricObjects, function (index, fabricObj) {
         fabricObj.isDrawingMode = false;
@@ -396,11 +410,6 @@
       );
       this.optionsCubeTeam.onAnnotationDelete(json);
     }
-  };
-
-  PDFAnnotate.prototype.editSelectedObject = function () {
-    const activeObject = this.getSelectedObject();
-    if (activeObject) activeObject.enterEditing();
   };
 
   PDFAnnotate.prototype.deleteAllObjects = function () {
